@@ -36,6 +36,11 @@ class RedisQueue:
 
         self._connection: typing.Optional[redis.Redis] = None
 
+    @staticmethod
+    def get_connection(host, port, password, db_index, queue_name):
+        _queue = RedisQueue(host, port, password, db_index, queue_name)
+        return _queue if _queue.connect() else None
+
     def connect(self):
 
         # 如果在 120s（TCP_KEEPIDLE）内没有收到任何网络数据
@@ -54,11 +59,11 @@ class RedisQueue:
             host=self.host, port=self.port, db=self.db_index, password=self.password,
             socket_timeout=15, socket_connect_timeout=15, socket_keepalive=True, socket_keepalive_options=options
         )
-        try:
-            conn.ping()
+
+        if conn.ping():
             self._connection = conn
-            return conn
-        except redis.RedisError:
+            return self
+        else:
             return None
 
     def put_message(self, msg: str):
